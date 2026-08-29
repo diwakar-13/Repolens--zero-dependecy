@@ -175,22 +175,31 @@ function resolveDirectory(candidatePath) {
 
 /* ---------------- Existing JavaScript resolver ---------------- */
 
-function resolveImport(importerPath, importPath) {
-  if (!importPath.startsWith(".")) {
+function resolveImport(importerPath, importPath, repositoryPath) {
+  let candidatePath;
+
+  if (importPath.startsWith("@/")) {
+    candidatePath = path.resolve(
+      repositoryPath,
+      "src",
+      importPath.slice(2),
+    );
+  } else if (importPath.startsWith(".")) {
+    const importerDirectory = path.dirname(importerPath);
+
+    candidatePath = path.resolve(
+      importerDirectory,
+      importPath,
+    );
+  } else {
     return null;
   }
 
-  const importerDirectory = path.dirname(importerPath);
+  const file =
+    resolveJavaScriptFile(candidatePath) ||
+    resolveDirectory(candidatePath);
 
-  const candidatePath = path.resolve(importerDirectory, importPath);
-
-  const file = resolveJavaScriptFile(candidatePath);
-
-  if (file) {
-    return file;
-  }
-
-  return resolveDirectory(candidatePath);
+  return file;
 }
 
 /* ---------------- Helpers ---------------- */

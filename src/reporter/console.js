@@ -123,9 +123,19 @@ function printReport({
         0,
       );
 
-      console.log("JavaScript-");
+      const resolvedCount = javascriptAnalysis.reduce(
+        (total, file) =>
+          total + file.imports.filter((item) => item.resolvedPath).length,
+        0,
+      );
+
+      const unresolvedCount = importCount - resolvedCount;
+
+      console.log("JavaScript");
       console.log("  Files analyzed:", javascriptAnalysis.length);
       console.log("  Imports:", importCount);
+      console.log("  Resolved:", resolvedCount);
+      console.log("  Unresolved:", unresolvedCount);
       console.log("  Exports:", exportCount);
     }
 
@@ -135,9 +145,19 @@ function printReport({
         0,
       );
 
-      console.log("Python-");
+      const resolvedCount = pythonAnalysis.reduce(
+        (total, file) =>
+          total + file.imports.filter((item) => item.resolvedPath).length,
+        0,
+      );
+
+      const unresolvedCount = importCount - resolvedCount;
+
+      console.log("Python");
       console.log("  Files analyzed:", pythonAnalysis.length);
       console.log("  Imports:", importCount);
+      console.log("  Resolved:", resolvedCount);
+      console.log("  Unresolved:", unresolvedCount);
     }
 
     if (cppAnalysis.length > 0) {
@@ -146,12 +166,25 @@ function printReport({
         0,
       );
 
-      console.log("C/C++-");
+      const resolvedCount = cppAnalysis.reduce(
+        (total, file) =>
+          total + file.includes.filter((item) => item.resolvedPath).length,
+        0,
+      );
+
+      const unresolvedCount = cppAnalysis.reduce(
+        (total, file) =>
+          total + file.includes.filter((item) => !item.resolvedPath).length,
+        0,
+      );
+
+      console.log("C/C++");
       console.log("  Files analyzed:", cppAnalysis.length);
       console.log("  Includes:", includeCount);
+      console.log("  Resolved:", resolvedCount);
+      console.log("  Unresolved:", unresolvedCount);
     }
   }
-
   // Largest Files
   if (largestFiles.length > 0) {
     console.log("\nLargest Files");

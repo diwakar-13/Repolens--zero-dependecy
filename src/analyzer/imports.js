@@ -72,7 +72,7 @@ function analyzeJavaScriptFile(filePath, repositoryPath) {
   const exports = extractJavaScriptExports(content);
 
   const resolvedImports = imports.map((importPath) => {
-    const resolvedPath = resolveImport(filePath, importPath);
+    const resolvedPath = resolveImport(filePath, importPath, repositoryPath);
 
     return {
       importPath,
@@ -92,17 +92,19 @@ function analyzeJavaScriptFiles(files, repositoryPath) {
   const results = [];
 
   for (const file of files) {
-    if (file.extension === ".js") {
-      const fullPath = path.join(repositoryPath, file.path);
-
-      const analysis = analyzeJavaScriptFile(fullPath, repositoryPath);
-
-      results.push({
-        path: file.path,
-        imports: analysis.imports,
-        exports: analysis.exports,
-      });
+    if (file.extension !== ".js" && file.extension !== ".jsx") {
+      continue;
     }
+
+    const fullPath = path.join(repositoryPath, file.path);
+
+    const analysis = analyzeJavaScriptFile(fullPath, repositoryPath);
+
+    results.push({
+      path: file.path,
+      imports: analysis.imports,
+      exports: analysis.exports,
+    });
   }
 
   return results;
