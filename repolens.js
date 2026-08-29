@@ -10,6 +10,20 @@ import { printReport } from "./src/reporter/console.js";
 import { analyzeStatistics } from "./src/analyzer/statistics.js";
 import { detectLanguages } from "./src/analyzer/language.js";
 import { findStructureSignals } from "./src/analyzer/structure.js";
+import {
+  getPackageConfiguration,
+  readPackageJson,
+} from "./src/analyzer/package.js";
+import {
+  detectCppEcosystem,
+  detectJavaEcosystem,
+  detectJavaScriptEcosystem,
+  detectPythonEcosystem,
+} from "./src/analyzer/ecosystem.js";
+import { findEntryPoints } from "./src/analyzer/entryPoint.js";
+import { analyzePythonFiles } from "./src/analyzer/python.js";
+import { analyzeCppFiles } from "./src/analyzer/cpp.js";
+import { analyzeJavaScriptFiles } from "./src/analyzer/imports.js";
 
 const repositoryInput = process.argv[2]; // Get the repository path from the command line
 
@@ -54,11 +68,51 @@ const languageResult = detectLanguages(files);
 const languageCounts = languageResult.languageCounts;
 const unknownFileCount = languageResult.unknownFileCount;
 
+// check what is language
+const hasJavaScript = languageCounts.JavaScript > 0;
+const hasPython = languageCounts.Python > 0;
+const hasCpp = languageCounts["C++"] > 0 || languageCounts.C > 0;
+
 // get from from structure.js
 const detectedStructureSignals = findStructureSignals(
   repositoryPath,
   repositoryPath,
 );
+
+// for package.json extract
+const packageJson = readPackageJson(repositoryPath);
+const packageConfig = getPackageConfiguration(packageJson);
+const startCommand = packageConfig.startCommand;
+const configuredEntryPoint = packageConfig.configuredEntryPoint;
+
+// ecosystems
+const javascriptEcosystem = detectJavaScriptEcosystem(packageJson);
+const pythonEcosystem = hasPython
+  ? detectPythonEcosystem(repositoryPath)
+  : {
+      frameworks: [],
+      packageFiles: [],
+    };
+const javaEcosystem = detectJavaEcosystem(repositoryPath);
+const cppEcosystem = detectCppEcosystem(repositoryPath);
+
+// for entry point comes from entryPoint.js
+const possibleEntryPoints = findEntryPoints(
+  files,
+  configuredEntryPoint,
+  javascriptEcosystem,
+);
+
+// Lightweight parsing
+const javascriptAnalysis = hasJavaScript
+  ? analyzeJavaScriptFiles(files, repositoryPath)
+  : [];
+
+const pythonAnalysis = hasPython
+  ? analyzePythonFiles(files, repositoryPath)
+  : [];
+
+const cppAnalysis = hasCpp ? analyzeCppFiles(files, repositoryPath) : [];
 
 // output
 printReport({
@@ -71,6 +125,15 @@ printReport({
   languageCounts,
   unknownFileCount,
   rootDirectories,
-    rootFiles,
-  detectedStructureSignals
+  rootFiles,
+  detectedStructureSignals,
+  startCommand,
+  javascriptEcosystem,
+  pythonEcosystem,
+  javaEcosystem,
+  cppEcosystem,
+  possibleEntryPoints,
+  javascriptAnalysis,
+  pythonAnalysis,
+  cppAnalysis,
 });
