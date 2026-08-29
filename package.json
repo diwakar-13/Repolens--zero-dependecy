@@ -1,0 +1,9 @@
+{
+  "name": "repolens",
+  "version": "0.1.0",
+  "description": "Zero-dependency codebase intelligence CLI",
+  "type": "module",
+  "scripts": {
+    "start": "node repolens.js"
+  }
+}
