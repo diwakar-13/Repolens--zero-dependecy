@@ -97,11 +97,10 @@ const javaEcosystem = detectJavaEcosystem(repositoryPath);
 const cppEcosystem = detectCppEcosystem(repositoryPath);
 
 // for entry point comes from entryPoint.js
-const possibleEntryPoints = findEntryPoints(
-  files,
-  configuredEntryPoint,
-  javascriptEcosystem,
-);
+const possibleEntryPoints = findEntryPoints(files, configuredEntryPoint, {
+  ...javascriptEcosystem,
+  repositoryPath,
+});
 
 // Lightweight parsing
 const javascriptAnalysis = hasJavaScript

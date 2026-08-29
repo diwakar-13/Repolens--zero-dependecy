@@ -3,12 +3,9 @@ function printReport({
   directoryCount,
   totalSize,
   totalLines,
-  extensionCounts,
-  largestFiles,
   languageCounts,
   unknownFileCount,
   rootDirectories,
-  rootFiles,
   detectedStructureSignals,
   startCommand,
   javascriptEcosystem,
@@ -16,201 +13,166 @@ function printReport({
   javaEcosystem,
   cppEcosystem,
   possibleEntryPoints,
+  largestFiles,
   javascriptAnalysis,
   pythonAnalysis,
   cppAnalysis,
 }) {
-  const hasEcosystem =
-    javascriptEcosystem.frameworks.length > 0 ||
-    javascriptEcosystem.libraries.length > 0 ||
-    pythonEcosystem.frameworks.length > 0 ||
-    javaEcosystem.frameworks.length > 0 ||
-    javaEcosystem.buildTools.length > 0 ||
-    cppEcosystem.buildTools.length > 0;
-
-  // repo summary
   console.log("\nRepository Summary");
   console.log("------------------");
 
   console.log("Files:", files.length);
   console.log("Directories:", directoryCount);
-  console.log("Total size:", totalSize, "bytes");
+  console.log("Total size:", formatBytes(totalSize));
   console.log("Total lines:", totalLines);
 
-  // extension count with sorted
-  console.log("\nFile Types");
-  console.log("----------");
-  const sortedExtension = Object.entries(extensionCounts).sort(
-    (a, b) => b[1] - a[1],
-  );
-  for (const [extension, count] of sortedExtension) {
-    console.log(`${extension}: ${count}`);
-  }
-
-  // for sorted language and unknown files
+  // Languages
   console.log("\nLanguages");
   console.log("---------");
 
-  const sortedLanguage = Object.entries(languageCounts).sort(
+  const sortedLanguages = Object.entries(languageCounts).sort(
     (a, b) => b[1] - a[1],
   );
-  for (const [language, count] of sortedLanguage) {
+
+  for (const [language, count] of sortedLanguages) {
     console.log(`${language}: ${count}`);
   }
 
-  console.log("\nUnknown Files");
-  console.log("-------------");
-  console.log("Unknown:", unknownFileCount);
-
-  // get root direcroris and files
-  console.log("\nRoot Directories");
-  console.log("----------------");
-  for (const directory of rootDirectories) {
-    console.log(directory);
+  if (unknownFileCount > 0) {
+    console.log("Unknown files:", unknownFileCount);
   }
 
-  console.log("\nRoot Files");
-  console.log("----------");
-  for (const file of rootFiles) {
-    console.log(file);
-  }
-
-  // for strucuture signal
-  console.log("\nStructure Signals");
+  // Project Structure
+  console.log("\nProject Structure");
   console.log("-----------------");
 
-  for (const item of detectedStructureSignals) {
+  if (rootDirectories.length > 0) {
+    console.log("Root directories:", rootDirectories.join(", "));
+  }
+
+  for (const item of detectedStructureSignals.slice(0, 5)) {
     console.log(`${item.path} → ${item.signal}`);
   }
 
-  // project configuration
-  console.log("\nProject Configuration");
-  console.log("---------------------");
-
+  // Project Configuration
   if (startCommand) {
+    console.log("\nProject Configuration");
+    console.log("---------------------");
     console.log("Start command:", startCommand);
-  } else {
-    console.log("Start command: Not found");
   }
 
-  // ecosystem
-  if (hasEcosystem) {
+  // Project Ecosystem
+  const frameworks = [
+    ...javascriptEcosystem.frameworks,
+    ...pythonEcosystem.frameworks,
+    ...javaEcosystem.frameworks,
+  ];
+
+  const libraries = [...javascriptEcosystem.libraries];
+
+  const buildTools = [...javaEcosystem.buildTools, ...cppEcosystem.buildTools];
+
+  if (frameworks.length > 0 || libraries.length > 0 || buildTools.length > 0) {
     console.log("\nProject Ecosystem");
     console.log("-----------------");
 
-    if (javascriptEcosystem.frameworks.length > 0) {
-      console.log(
-        "JavaScript Framework:",
-        javascriptEcosystem.frameworks.join(", "),
-      );
+    if (frameworks.length > 0) {
+      console.log("Frameworks:", frameworks.join(", "));
     }
 
-    if (javascriptEcosystem.libraries.length > 0) {
-      console.log(
-        "JavaScript Libraries:",
-        javascriptEcosystem.libraries.join(", "),
-      );
+    if (libraries.length > 0) {
+      console.log("Libraries:", libraries.join(", "));
     }
 
-    if (pythonEcosystem.frameworks.length > 0) {
-      console.log("Python Framework:", pythonEcosystem.frameworks.join(", "));
-    }
-
-    if (javaEcosystem.frameworks.length > 0) {
-      console.log("Java Framework:", javaEcosystem.frameworks.join(", "));
-    }
-
-    if (javaEcosystem.buildTools.length > 0) {
-      console.log("Java Build Tool:", javaEcosystem.buildTools.join(", "));
-    }
-
-    if (cppEcosystem.buildTools.length > 0) {
-      console.log("C/C++ Build Tool:", cppEcosystem.buildTools.join(", "));
+    if (buildTools.length > 0) {
+      console.log("Build Tools:", buildTools.join(", "));
     }
   }
 
-  // for entry points
+  // Entry Points
   if (possibleEntryPoints.length > 0) {
-    console.log("\nPossible Entry Points");
-    console.log("---------------------");
+    console.log("\nEntry Points");
+    console.log("------------");
 
-    for (const entry of possibleEntryPoints) {
+    for (const entry of possibleEntryPoints.slice(0, 5)) {
       console.log(`${entry.path} - score: ${entry.score}`);
     }
-  }
 
-  // analysis
-  if (javascriptAnalysis.length > 0) {
-    console.log("\nJavaScript Analysis");
-    console.log("-------------------");
-
-    for (const file of javascriptAnalysis) {
-      console.log(`\n${file.path}`);
-
-      console.log("  Imports:");
-      if (file.imports.length > 0) {
-        for (const item of file.imports) {
-          console.log(`    - ${item}`);
-        }
-      } else {
-        console.log("    None");
-      }
-
-      console.log("  Exports:");
-      if (file.exports.length > 0) {
-        for (const item of file.exports) {
-          console.log(`    - ${item}`);
-        }
-      } else {
-        console.log("    None");
-      }
+    if (possibleEntryPoints.length > 5) {
+      console.log(`... and ${possibleEntryPoints.length - 5} more`);
     }
   }
 
-  if (pythonAnalysis.length > 0) {
-    console.log("\nPython Analysis");
-    console.log("----------------");
+  // Language Analysis
+  if (
+    javascriptAnalysis.length > 0 ||
+    pythonAnalysis.length > 0 ||
+    cppAnalysis.length > 0
+  ) {
+    console.log("\nLanguage Analysis");
+    console.log("-----------------");
 
-    for (const file of pythonAnalysis) {
-      console.log(`\n${file.path}`);
+    if (javascriptAnalysis.length > 0) {
+      const importCount = javascriptAnalysis.reduce(
+        (total, file) => total + file.imports.length,
+        0,
+      );
 
-      console.log("  Imports:");
+      const exportCount = javascriptAnalysis.reduce(
+        (total, file) => total + file.exports.length,
+        0,
+      );
 
-      if (file.imports.length > 0) {
-        for (const item of file.imports) {
-          console.log(`    - ${item}`);
-        }
-      } else {
-        console.log("    None");
-      }
+      console.log("JavaScript-");
+      console.log("  Files analyzed:", javascriptAnalysis.length);
+      console.log("  Imports:", importCount);
+      console.log("  Exports:", exportCount);
+    }
+
+    if (pythonAnalysis.length > 0) {
+      const importCount = pythonAnalysis.reduce(
+        (total, file) => total + file.imports.length,
+        0,
+      );
+
+      console.log("Python-");
+      console.log("  Files analyzed:", pythonAnalysis.length);
+      console.log("  Imports:", importCount);
+    }
+
+    if (cppAnalysis.length > 0) {
+      const includeCount = cppAnalysis.reduce(
+        (total, file) => total + file.includes.length,
+        0,
+      );
+
+      console.log("C/C++-");
+      console.log("  Files analyzed:", cppAnalysis.length);
+      console.log("  Includes:", includeCount);
     }
   }
-  if (cppAnalysis.length > 0) {
-    console.log("\nC/C++ Analysis");
-    console.log("----------------");
 
-    for (const file of cppAnalysis) {
-      console.log(`\n${file.path}`);
+  // Largest Files
+  if (largestFiles.length > 0) {
+    console.log("\nLargest Files");
+    console.log("-------------");
 
-      console.log("  Includes:");
-
-      if (file.includes.length > 0) {
-        for (const item of file.includes) {
-          console.log(`    - ${item}`);
-        }
-      } else {
-        console.log("    None");
-      }
+    for (const file of largestFiles.slice(0, 3)) {
+      console.log(`${file.path} - ${formatBytes(file.size)}`);
     }
   }
+}
 
-  // largest file
-  console.log("\nLargest Files");
-  console.log("-------------");
-
-  for (const file of largestFiles) {
-    console.log(`${file.path} - ${file.size} bytes`);
+function formatBytes(bytes) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
   }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(2)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 export { printReport };

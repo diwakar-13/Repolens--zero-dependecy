@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveImport } from "./resolver.js";
 
 function extractJavaScriptImports(content) {
   const imports = [];
@@ -23,11 +24,9 @@ function extractJavaScriptImports(content) {
   return imports;
 }
 
-// export
 function extractJavaScriptExports(content) {
   const exports = [];
 
-    // for function export like export function()
   const functionPattern =
     /export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g;
 
@@ -35,7 +34,6 @@ function extractJavaScriptExports(content) {
     exports.push(match[1]);
   }
 
-    // for named export export { a}
   const namedExportPattern = /export\s*\{\s*([^}]+)\s*\}/g;
 
   for (const match of content.matchAll(namedExportPattern)) {
@@ -46,39 +44,46 @@ function extractJavaScriptExports(content) {
     }
   }
 
-    // for module.export
   const moduleExportPattern = /module\.exports\s*=\s*([A-Za-z_$][\w$]*)/g;
 
   for (const match of content.matchAll(moduleExportPattern)) {
     exports.push(match[1]);
   }
 
-    // for export.named
   const exportsPattern = /exports\.([A-Za-z_$][\w$]*)\s*=/g;
 
   for (const match of content.matchAll(exportsPattern)) {
     exports.push(match[1]);
-    }
-    
-    // for export default
-    const defaultExportPattern =
-  /export\s+default\s+([A-Za-z_$][\w$]*)/g;
+  }
 
-for (const match of content.matchAll(defaultExportPattern)) {
-  exports.push(`default:${match[1]}`);
-}
+  const defaultExportPattern = /export\s+default\s+([A-Za-z_$][\w$]*)/g;
+
+  for (const match of content.matchAll(defaultExportPattern)) {
+    exports.push(`default:${match[1]}`);
+  }
 
   return exports;
 }
 
-function analyzeJavaScriptFile(filePath) {
+function analyzeJavaScriptFile(filePath, repositoryPath) {
   const content = fs.readFileSync(filePath, "utf8");
 
   const imports = extractJavaScriptImports(content);
   const exports = extractJavaScriptExports(content);
 
+  const resolvedImports = imports.map((importPath) => {
+    const resolvedPath = resolveImport(filePath, importPath);
+
+    return {
+      importPath,
+      resolvedPath: resolvedPath
+        ? path.relative(repositoryPath, resolvedPath).split(path.sep).join("/")
+        : null,
+    };
+  });
+
   return {
-    imports,
+    imports: resolvedImports,
     exports,
   };
 }
@@ -90,7 +95,7 @@ function analyzeJavaScriptFiles(files, repositoryPath) {
     if (file.extension === ".js") {
       const fullPath = path.join(repositoryPath, file.path);
 
-      const analysis = analyzeJavaScriptFile(fullPath);
+      const analysis = analyzeJavaScriptFile(fullPath, repositoryPath);
 
       results.push({
         path: file.path,
